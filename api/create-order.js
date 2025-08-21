@@ -18,10 +18,36 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Log environment variable status (without exposing values)
+    console.log('Env check:', {
+      supabase_url: !!process.env.SUPABASE_URL,
+      supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      razorpay_id: !!process.env.RAZORPAY_KEY_ID,
+      razorpay_secret: !!process.env.RAZORPAY_KEY_SECRET
+    });
+
     const { name, email, whatsappNumber, dateOfBirth, placeOfBirth, birthTime, unknownBirthTime, questions, amount = 39900 } = req.body;
 
     if (!name || !whatsappNumber || !dateOfBirth || !placeOfBirth) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate environment variables
+    if (!process.env.SUPABASE_URL) {
+      console.error('SUPABASE_URL not found');
+      return res.status(500).json({ error: 'Server configuration error: SUPABASE_URL missing' });
+    }
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not found');
+      return res.status(500).json({ error: 'Server configuration error: SUPABASE_SERVICE_ROLE_KEY missing' });
+    }
+    if (!process.env.RAZORPAY_KEY_ID) {
+      console.error('RAZORPAY_KEY_ID not found');
+      return res.status(500).json({ error: 'Server configuration error: RAZORPAY_KEY_ID missing' });
+    }
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      console.error('RAZORPAY_KEY_SECRET not found');
+      return res.status(500).json({ error: 'Server configuration error: RAZORPAY_KEY_SECRET missing' });
     }
 
     // Initialize Supabase
