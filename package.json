@@ -37,6 +37,9 @@
     "vite": "6.3.2",
     "wrangler": "^4.25.0"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "build": "tsc -b && vite build",
     "vercel-build": "npm run build",

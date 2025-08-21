@@ -118,7 +118,7 @@ export default function Hero() {
         name: 'Yooanastro',
         description: 'Vedic Kundali & Personalized Guidance',
         order_id: order.razorpay_order_id,
-        handler: async (response: any) => {
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           try {
             console.log('Razorpay payment response:', response);
 
@@ -175,7 +175,7 @@ export default function Hero() {
         },
       };
 
-      // @ts-ignore
+      // @ts-expect-error - Razorpay is loaded from external script
       const rzp = new window.Razorpay(options);
       rzp.open();
 
