@@ -82,30 +82,12 @@ export default async function handler(req, res) {
     console.log('Razorpay Key ID (first 10 chars):', process.env.RAZORPAY_KEY_ID?.substring(0, 10));
     console.log('Razorpay Key Secret (first 10 chars):', process.env.RAZORPAY_KEY_SECRET?.substring(0, 10));
     
-    // Create Razorpay order with better error handling
-    let razorpayOrder;
-    try {
-      razorpayOrder = await razorpay.orders.create({
-        amount: amount,
-        currency: 'INR',
-        receipt: `receipt_order_${Date.now()}`,
-      });
-      console.log('✅ Razorpay order created successfully:', razorpayOrder.id);
-    } catch (razorpayError) {
-      console.error('❌ Razorpay order creation failed:', razorpayError);
-      console.error('Razorpay error details:', razorpayError.error);
-      
-      // TEMPORARY FIX: Create a mock order for testing when Razorpay fails
-      console.log('🔄 Creating mock order for testing...');
-      razorpayOrder = {
-        id: `mock_order_${Date.now()}`,
-        amount: amount,
-        currency: 'INR',
-        receipt: `mock_receipt_${Date.now()}`,
-        status: 'created'
-      };
-      console.log('⚠️ Using mock Razorpay order:', razorpayOrder.id);
-    }
+    // Create Razorpay order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amount,
+      currency: 'INR',
+      receipt: `receipt_order_${Date.now()}`,
+    });
 
     console.log('✅ Razorpay order created:', razorpayOrder.id);
 
@@ -183,8 +165,7 @@ export default async function handler(req, res) {
       razorpay_order_id: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      razorpay_key: process.env.RAZORPAY_KEY_ID || 'rzp_test_demo',
-      isMockOrder: razorpayOrder.id.startsWith('mock_order_')
+      razorpay_key: process.env.RAZORPAY_KEY_ID,
     };
 
     console.log('✅ SUCCESS - Returning response:', { id: response.id, razorpay_order_id: response.razorpay_order_id });
@@ -193,25 +174,37 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('💥 CRITICAL ERROR in create-order:', error);
     console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
+    console.error('Error constructor:', error.constructor.name);
+    
+    // Log environment variable status for debugging
+    console.error('Environment check at error time:', {
+      RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID ? `${process.env.RAZORPAY_KEY_ID.substring(0, 15)}...` : 'MISSING',
+      RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET ? `${process.env.RAZORPAY_KEY_SECRET.substring(0, 10)}...` : 'MISSING'
+    });
     
     // Check if it's a Razorpay-specific error
     if (error.error && error.error.code) {
       console.error('🔴 Razorpay Error Code:', error.error.code);
       console.error('🔴 Razorpay Error Description:', error.error.description);
+      console.error('🔴 Razorpay Error Field:', error.error.field);
+      console.error('🔴 Razorpay Error Reason:', error.error.reason);
       
-      // Handle specific Razorpay errors
-      if (error.error.code === 'BAD_REQUEST_ERROR') {
-        return res.status(500).json({ 
-          error: 'Database error: Could not create order',
-          details: `Invalid API key - ${error.error.description || 'Razorpay authentication failed'}`
-        });
-      }
+      // Handle specific Razorpay errors with more detail
+      return res.status(500).json({ 
+        error: 'Database error: Could not create order',
+        details: `Invalid API key - ${error.error.description || error.error.reason || 'Razorpay authentication failed'}`,
+        razorpayErrorCode: error.error.code,
+        razorpayErrorField: error.error.field
+      });
     }
     
+    // Handle other errors
     return res.status(500).json({ 
       error: 'Database error: Could not create order',
       details: error.message || 'Internal server error',
-      type: error.constructor.name
+      errorType: error.constructor.name,
+      timestamp: new Date().toISOString()
     });
   }
 }

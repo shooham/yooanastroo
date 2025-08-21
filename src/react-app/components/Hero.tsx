@@ -127,13 +127,6 @@ export default function Hero() {
 
       const order = result;
 
-      // Check if this is a mock order (for testing when Razorpay credentials are invalid)
-      if (order.isMockOrder) {
-        alert('Demo mode: Razorpay credentials need to be updated. Order saved in database for testing.');
-        setIsLoading(false);
-        return;
-      }
-
       // Initialize Razorpay
       if (!order.razorpay_key) {
         alert('Payment configuration error. Please contact support.');
