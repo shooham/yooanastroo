@@ -17,51 +17,68 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  console.log('=== CREATE ORDER API CALLED ===');
+  console.log('Request method:', req.method);
+  console.log('Request body received:', !!req.body);
+
   try {
-    // Log environment variable status (without exposing values)
-    console.log('Env check:', {
-      supabase_url: !!process.env.SUPABASE_URL,
-      supabase_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      razorpay_id: !!process.env.RAZORPAY_KEY_ID,
-      razorpay_secret: !!process.env.RAZORPAY_KEY_SECRET
-    });
+    // Check environment variables first
+    const envCheck = {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      RAZORPAY_KEY_ID: !!process.env.RAZORPAY_KEY_ID,
+      RAZORPAY_KEY_SECRET: !!process.env.RAZORPAY_KEY_SECRET
+    };
+    
+    console.log('Environment variables check:', envCheck);
+
+    // Validate ALL environment variables are present
+    if (!process.env.SUPABASE_URL) {
+      console.error('❌ SUPABASE_URL missing');
+      return res.status(500).json({ error: 'SUPABASE_URL environment variable not configured in Vercel' });
+    }
+    
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY missing');
+      return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY environment variable not configured in Vercel' });
+    }
+    
+    if (!process.env.RAZORPAY_KEY_ID) {
+      console.error('❌ RAZORPAY_KEY_ID missing');
+      return res.status(500).json({ error: 'RAZORPAY_KEY_ID environment variable not configured in Vercel' });
+    }
+    
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      console.error('❌ RAZORPAY_KEY_SECRET missing');
+      return res.status(500).json({ error: 'RAZORPAY_KEY_SECRET environment variable not configured in Vercel' });
+    }
+
+    console.log('✅ All environment variables present');
 
     const { name, email, whatsappNumber, dateOfBirth, placeOfBirth, birthTime, unknownBirthTime, questions, amount = 39900 } = req.body;
 
+    console.log('Form data received:', { name, whatsappNumber, dateOfBirth, placeOfBirth, questionsCount: questions?.length || 0 });
+
     if (!name || !whatsappNumber || !dateOfBirth || !placeOfBirth) {
+      console.error('❌ Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate environment variables
-    if (!process.env.SUPABASE_URL) {
-      console.error('SUPABASE_URL not found');
-      return res.status(500).json({ error: 'Server configuration error: SUPABASE_URL missing' });
-    }
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('SUPABASE_SERVICE_ROLE_KEY not found');
-      return res.status(500).json({ error: 'Server configuration error: SUPABASE_SERVICE_ROLE_KEY missing' });
-    }
-    if (!process.env.RAZORPAY_KEY_ID) {
-      console.error('RAZORPAY_KEY_ID not found');
-      return res.status(500).json({ error: 'Server configuration error: RAZORPAY_KEY_ID missing' });
-    }
-    if (!process.env.RAZORPAY_KEY_SECRET) {
-      console.error('RAZORPAY_KEY_SECRET not found');
-      return res.status(500).json({ error: 'Server configuration error: RAZORPAY_KEY_SECRET missing' });
-    }
-
+    console.log('🔄 Initializing Supabase...');
     // Initialize Supabase
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
+    console.log('🔄 Initializing Razorpay...');
     // Initialize Razorpay
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
 
+    console.log('🔄 Creating Razorpay order...');
     // Create Razorpay order
     const razorpayOrder = await razorpay.orders.create({
       amount: amount,
@@ -69,6 +86,9 @@ export default async function handler(req, res) {
       receipt: `receipt_order_${Date.now()}`,
     });
 
+    console.log('✅ Razorpay order created:', razorpayOrder.id);
+
+    console.log('🔄 Saving order to database...');
     // Create order entry
     const { data: orderData, error: orderError } = await supabase
       .from('orders')
@@ -78,7 +98,7 @@ export default async function handler(req, res) {
         date_of_birth: dateOfBirth,
         time_of_birth: birthTime,
         place_of_birth: placeOfBirth,
-        questions: questions.length > 0 ? questions.join('. ') : 'Customer questions will be answered in the personalized kundali report.',
+        questions: questions && questions.length > 0 ? questions.join('. ') : 'Customer questions will be answered in the personalized kundali report.',
         amount: amount,
         amount_display: `₹${(amount / 100).toFixed(0)} PAID`,
         payment_status: 'pending',
@@ -89,10 +109,16 @@ export default async function handler(req, res) {
       .single();
 
     if (orderError) {
-      console.error('Order creation error:', orderError);
-      return res.status(500).json({ error: 'Could not create order.' });
+      console.error('❌ Order creation error:', orderError);
+      return res.status(500).json({ 
+        error: 'Database error: Could not create order',
+        details: orderError.message
+      });
     }
 
+    console.log('✅ Order saved to database, ID:', orderData.id);
+
+    console.log('🔄 Creating consultation form...');
     // Create consultation form entry
     const { data: dbData, error: dbError } = await supabase
       .from('consultation_forms')
@@ -104,17 +130,17 @@ export default async function handler(req, res) {
         date_of_birth: dateOfBirth,
         time_of_birth: birthTime,
         unknown_birth_time: unknownBirthTime,
-        questions_json: JSON.stringify(questions),
-        q1: questions[0] || null,
-        q2: questions[1] || null,
-        q3: questions[2] || null,
-        q4: questions[3] || null,
-        q5: questions[4] || null,
-        q6: questions[5] || null,
-        q7: questions[6] || null,
-        q8: questions[7] || null,
-        q9: questions[8] || null,
-        q10: questions[9] || null,
+        questions_json: JSON.stringify(questions || []),
+        q1: questions?.[0] || null,
+        q2: questions?.[1] || null,
+        q3: questions?.[2] || null,
+        q4: questions?.[3] || null,
+        q5: questions?.[4] || null,
+        q6: questions?.[5] || null,
+        q7: questions?.[6] || null,
+        q8: questions?.[7] || null,
+        q9: questions?.[8] || null,
+        q10: questions?.[9] || null,
         order_id: orderData.id,
         payment_info: '₹399 PENDING ⏳'
       })
@@ -122,20 +148,33 @@ export default async function handler(req, res) {
       .single();
 
     if (dbError) {
-      console.error('Supabase error:', dbError);
-      return res.status(500).json({ error: 'Could not save order details.' });
+      console.error('❌ Consultation form error:', dbError);
+      return res.status(500).json({ 
+        error: 'Database error: Could not save consultation details',
+        details: dbError.message
+      });
     }
 
-    return res.status(200).json({
+    console.log('✅ Consultation form created');
+
+    const response = {
       id: orderData.id,
       razorpay_order_id: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       razorpay_key: process.env.RAZORPAY_KEY_ID,
-    });
+    };
+
+    console.log('✅ SUCCESS - Returning response:', { id: response.id, razorpay_order_id: response.razorpay_order_id });
+    return res.status(200).json(response);
 
   } catch (error) {
-    console.error('Create order error:', error);
-    return res.status(500).json({ error: 'Failed to create order' });
+    console.error('💥 CRITICAL ERROR in create-order:', error);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message,
+      type: error.constructor.name
+    });
   }
 }
