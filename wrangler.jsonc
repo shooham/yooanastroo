@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "0198c676-bebb-7223-8777-1a0f7d268d15",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-06-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+  },
+  "upload_source_maps": true,
+  "assets": {
+    "not_found_handling": "single-page-application",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "0198c676-bebb-7223-8777-1a0f7d268d15",
+      "database_id": "0198c676-bebb-7223-8777-1a0f7d268d15",
+    },
+  ],
+  "vars": {
+    "SUPABASE_URL": "https://eynsmbktdbrhixczuvty.supabase.co",
+    "RAZORPAY_KEY_ID": "rzp_test_NjWnGjHPeR8zzv",
+    "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5bnNtYmt0ZGJyaGl4Y3p1dnR5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTE1MDU3NCwiZXhwIjoyMDcwNzI2NTc0fQ.QvQBoOf8zPBCnqcSVbm_C3JxlX-JOELS9IsmjJWn3iU",
+    "RAZORPAY_KEY_SECRET": "nuYQ855htiqTOjrpLI1lzkjS"
+  }
+}
