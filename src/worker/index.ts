@@ -60,7 +60,7 @@ app.post('/api/create-order', zValidator('json', CreateOrderSchema), async (c) =
     }
 
     // Then create consultation form entry linked to order
-    const { data: dbData, error: dbError } = await supabase
+    const { error: dbError } = await supabase
       .from('consultation_forms')
       .insert({
         full_name: data.name,
@@ -83,9 +83,7 @@ app.post('/api/create-order', zValidator('json', CreateOrderSchema), async (c) =
         q10: data.questions[9] || null,
         order_id: orderData.id,
         payment_info: '₹399 PENDING ⏳' // Initial payment status
-      })
-      .select('id')
-      .single();
+      });
 
     if (dbError) {
       console.error('Supabase error:', dbError);
