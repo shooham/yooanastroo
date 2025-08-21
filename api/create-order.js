@@ -38,9 +38,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'SUPABASE_URL environment variable not configured in Vercel' });
     }
     
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ SUPABASE_SERVICE_ROLE_KEY missing');
-      return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY environment variable not configured in Vercel' });
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_ANON_KEY && !process.env.VITE_SUPABASE_ANON_KEY) {
+      console.error('❌ No valid Supabase key found');
+      return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY environment variable not configured in Vercel' });
     }
     
     if (!process.env.RAZORPAY_KEY_ID) {
@@ -68,11 +68,20 @@ export default async function handler(req, res) {
     console.log('Supabase URL:', process.env.SUPABASE_URL);
     console.log('Supabase Service Role Key (first 20 chars):', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20));
     
-    // Initialize Supabase
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    // Initialize Supabase - Try service role first, fallback to anon key
+    let supabase;
+    try {
+      supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+    } catch (serviceError) {
+      console.log('⚠️ Service role failed, trying anon key...');
+      supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+      );
+    }
 
     // Test Supabase connection
     console.log('🔄 Testing Supabase connection...');

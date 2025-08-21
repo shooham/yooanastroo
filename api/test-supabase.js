@@ -46,10 +46,13 @@ export default async function handler(req, res) {
     );
 
     try {
+      // First test basic auth with a simple query
+      const { data: authTest, error: authError } = await supabaseService.auth.getUser();
+      console.log('Auth test result:', authTest, authError);
+      
+      // Test database access with a simple schema query instead of orders table
       const { data: serviceData, error: serviceError } = await supabaseService
-        .from('orders')
-        .select('count', { count: 'exact' })
-        .limit(1);
+        .rpc('version');
       
       if (serviceError) {
         console.error('❌ Service Role connection failed:', serviceError);
