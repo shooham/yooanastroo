@@ -99,20 +99,43 @@ export default function Hero() {
       const result = await response.json();
 
       console.log('Order creation response:', result);
-      console.log('Order ID:', result.id);
-      console.log('Razorpay Order ID:', result.razorpay_order_id);
-
-      if (result.error) {
-        alert('Error creating order: ' + result.error);
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('API Error:', result);
+        alert(`Error creating order: ${result.error || 'Unknown error'}\nDetails: ${result.details || 'No additional details'}`);
         setIsLoading(false);
         return;
       }
 
+      if (result.error) {
+        console.error('Order creation failed:', result);
+        alert(`Error creating order: ${result.error}\nDetails: ${result.details || 'No additional details'}`);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!result.razorpay_order_id || !result.razorpay_key) {
+        console.error('Incomplete order response:', result);
+        alert('Invalid response from payment service. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Order ID:', result.id);
+      console.log('Razorpay Order ID:', result.razorpay_order_id);
+
       const order = result;
 
       // Initialize Razorpay
+      if (!order.razorpay_key) {
+        alert('Payment configuration error. Please contact support.');
+        setIsLoading(false);
+        return;
+      }
+      
       const options = {
-        key: order.razorpay_key || 'rzp_test_NjWnGjHPeR8zzv', // Fallback key
+        key: order.razorpay_key,
         amount: order.amount,
         currency: order.currency,
         name: 'Yooanastro',

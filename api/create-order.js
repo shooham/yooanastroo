@@ -79,6 +79,21 @@ export default async function handler(req, res) {
     });
 
     console.log('🔄 Creating Razorpay order...');
+    console.log('Razorpay Key ID (first 10 chars):', process.env.RAZORPAY_KEY_ID?.substring(0, 10));
+    console.log('Razorpay Key Secret (first 10 chars):', process.env.RAZORPAY_KEY_SECRET?.substring(0, 10));
+    
+    // Test Razorpay connection first
+    try {
+      await razorpay.orders.all({ count: 1 });
+      console.log('✅ Razorpay connection successful');
+    } catch (razorpayTestError) {
+      console.error('❌ Razorpay connection failed:', razorpayTestError.message);
+      return res.status(500).json({ 
+        error: 'Payment gateway configuration error',
+        details: `Razorpay API connection failed: ${razorpayTestError.message}`
+      });
+    }
+    
     // Create Razorpay order
     const razorpayOrder = await razorpay.orders.create({
       amount: amount,
@@ -171,9 +186,24 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('💥 CRITICAL ERROR in create-order:', error);
     console.error('Error stack:', error.stack);
+    
+    // Check if it's a Razorpay-specific error
+    if (error.error && error.error.code) {
+      console.error('🔴 Razorpay Error Code:', error.error.code);
+      console.error('🔴 Razorpay Error Description:', error.error.description);
+      
+      // Handle specific Razorpay errors
+      if (error.error.code === 'BAD_REQUEST_ERROR') {
+        return res.status(500).json({ 
+          error: 'Database error: Could not create order',
+          details: `Invalid API key - ${error.error.description || 'Razorpay authentication failed'}`
+        });
+      }
+    }
+    
     return res.status(500).json({ 
-      error: 'Internal server error',
-      message: error.message,
+      error: 'Database error: Could not create order',
+      details: error.message || 'Internal server error',
       type: error.constructor.name
     });
   }
