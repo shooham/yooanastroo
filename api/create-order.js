@@ -65,11 +65,39 @@ export default async function handler(req, res) {
     }
 
     console.log('🔄 Initializing Supabase...');
+    console.log('Supabase URL:', process.env.SUPABASE_URL);
+    console.log('Supabase Service Role Key (first 20 chars):', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20));
+    
     // Initialize Supabase
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
+
+    // Test Supabase connection
+    console.log('🔄 Testing Supabase connection...');
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from('orders')
+        .select('count', { count: 'exact' })
+        .limit(1);
+      
+      if (testError) {
+        console.error('❌ Supabase connection test failed:', testError);
+        return res.status(500).json({ 
+          error: 'Database error: Could not create order',
+          details: `Supabase connection failed: ${testError.message}`,
+          supabaseError: testError.code
+        });
+      }
+      console.log('✅ Supabase connection successful');
+    } catch (supabaseTestError) {
+      console.error('❌ Supabase connection test error:', supabaseTestError);
+      return res.status(500).json({ 
+        error: 'Database error: Could not create order',
+        details: `Supabase authentication failed: ${supabaseTestError.message}`
+      });
+    }
 
     console.log('🔄 Initializing Razorpay...');
     // Initialize Razorpay
