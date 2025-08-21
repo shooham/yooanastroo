@@ -1,0 +1,58 @@
+===========================================
+COPY THESE TO VERCEL DASHBOARD
+===========================================
+
+Variable Name: NODE_ENV
+Value: production
+
+Variable Name: SUPABASE_URL  
+Value: https://eynsmbktdbrhixczuvty.supabase.co
+
+Variable Name: SUPABASE_ANON_KEY
+Value: [REPLACE_WITH_YOUR_SUPABASE_ANON_KEY]
+
+Variable Name: SUPABASE_SERVICE_ROLE_KEY
+Value: [REPLACE_WITH_YOUR_SUPABASE_SERVICE_ROLE_KEY]
+
+Variable Name: RAZORPAY_KEY_ID
+Value: rzp_test_NjWnGjHPeR8zzv
+
+Variable Name: RAZORPAY_KEY_SECRET
+Value: [REPLACE_WITH_YOUR_RAZORPAY_SECRET]
+
+===========================================
+VERCEL SETUP INSTRUCTIONS:
+===========================================
+
+1. Go to https://vercel.com/dashboard
+2. Select your project "Johanna-Astroversal"
+3. Click Settings > Environment Variables
+4. For EACH variable above:
+   - Click "Add New"
+   - Enter the Variable Name exactly as shown
+   - Enter the Value (replace bracketed placeholders with real values)
+   - Select "Production, Preview, and Development" 
+   - Click Save
+5. After adding all variables, go to Deployments
+6. Click "Redeploy" on your latest deployment
+
+===========================================
+WHERE TO FIND YOUR REAL KEYS:
+===========================================
+
+SUPABASE_ANON_KEY:
+- Go to https://supabase.com/dashboard
+- Select your project
+- Go to Settings > API
+- Copy "anon public" key
+
+SUPABASE_SERVICE_ROLE_KEY:
+- Same location as above
+- Copy "service_role" key (keep this secret!)
+
+RAZORPAY_KEY_SECRET:
+- Go to https://dashboard.razorpay.com
+- Go to Account & Settings > API Keys
+- Copy your "Key Secret"
+
+===========================================
