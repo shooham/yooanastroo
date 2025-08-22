@@ -101,23 +101,60 @@ export default async function handler(req, res) {
 
     console.log('✅ Razorpay order created:', razorpayOrder.id);
 
-    // Create order data (simplified approach)
+    // Create order data and SAVE TO DATABASE
     const orderNumber = `AST${Date.now().toString().slice(-6)}`;
     const orderId = `astro_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Prepare consultation data for database storage
+    const consultationData = {
+      service: 'astrology_consultation',
+      customer_name: name,
+      email: email || 'noemail@yooanastro.com',
+      whatsapp_number: whatsappNumber,
+      date_of_birth: dateOfBirth,
+      time_of_birth: birthTime || null,
+      place_of_birth: placeOfBirth,
+      unknown_birth_time: unknownBirthTime || false,
+      questions: questions || [],
+      form_submitted_at: new Date().toISOString()
+    };
+
+    console.log('🔄 Saving customer consultation data to database...');
+    
+    // Save to orders table using the existing e-commerce schema
+    try {
+      const { data: savedOrder, error: saveError } = await supabase
+        .from('orders')
+        .insert({
+          order_number: orderNumber,
+          status: 'pending',
+          subtotal: amount,
+          total_amount: amount,
+          payment_status: 'pending',
+          payment_method: 'razorpay',
+          payment_id: razorpayOrder.id,
+          notes: JSON.stringify(consultationData), // Store all consultation data in notes field
+          tracking_number: `${name}|${whatsappNumber}|${placeOfBirth}` // Backup storage
+        })
+        .select('id')
+        .single();
+
+      if (saveError) {
+        console.error('❌ Failed to save to database:', saveError);
+        console.log('⚠️ Continuing without database save - order will be tracked locally');
+      } else {
+        console.log('✅ Customer data saved to database! Order ID:', savedOrder.id);
+        orderId = savedOrder.id; // Use the database ID
+      }
+    } catch (dbError) {
+      console.error('❌ Database save exception:', dbError);
+      console.log('⚠️ Continuing without database save - order will be tracked locally');
+    }
     
     const orderData = {
       id: orderId,
       order_number: orderNumber,
-      full_name: name,
-      email: email || 'noemail@yooanastro.com',
-      whatsapp_number: whatsappNumber,
-      date_of_birth: dateOfBirth,
-      time_of_birth: birthTime,
-      place_of_birth: placeOfBirth,
-      unknown_birth_time: unknownBirthTime,
-      questions: questions || [],
-      amount: amount,
-      payment_status: 'pending',
+      consultation_data: consultationData,
       razorpay_order_id: razorpayOrder.id,
       created_at: new Date().toISOString()
     };

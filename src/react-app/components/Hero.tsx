@@ -145,7 +145,7 @@ export default function Hero() {
           try {
             console.log('Razorpay payment response:', response);
 
-            const verifyResponse = await fetch('/api/verify-payment', {
+            const verifyResponse = await fetch('/api/verify-payment-fixed', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
