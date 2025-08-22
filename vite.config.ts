@@ -9,6 +9,18 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        configure: (proxy, options) => {
+          // Fallback to Vercel dev server if available
+          proxy.on('error', (err, req, res) => {
+            console.log('API proxy error, trying direct file execution...');
+          });
+        }
+      }
+    }
   },
   build: {
     outDir: "../../dist",
