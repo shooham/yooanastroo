@@ -38,7 +38,7 @@
     "vite": "6.3.2"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "scripts": {
     "build": "tsc -b && vite build",

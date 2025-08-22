@@ -13,9 +13,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
-        configure: (proxy, options) => {
+        configure: (proxy) => {
           // Fallback to Vercel dev server if available
-          proxy.on('error', (err, req, res) => {
+          proxy.on('error', () => {
             console.log('API proxy error, trying direct file execution...');
           });
         }

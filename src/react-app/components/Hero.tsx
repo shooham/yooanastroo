@@ -198,8 +198,21 @@ export default function Hero() {
         },
       };
 
-      // @ts-expect-error - Razorpay is loaded from external script
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        alert('Payment system is loading. Please try again in a moment.');
+        setIsLoading(false);
+        return;
+      }
+
       const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        alert(`Payment failed: ${response.error.description || 'Unknown error'}`);
+        setIsLoading(false);
+      });
+
       rzp.open();
 
     } catch (error) {
@@ -211,17 +224,25 @@ export default function Hero() {
   };
 
   useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
+    // Load Razorpay script if not already loaded
+    if (!window.Razorpay) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        console.log('✅ Razorpay script loaded successfully');
+      };
+      script.onerror = () => {
+        console.error('❌ Failed to load Razorpay script');
+      };
+      document.body.appendChild(script);
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
   }, []);
 
   return (
