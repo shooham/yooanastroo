@@ -76,7 +76,7 @@ export default function Hero() {
     const validQuestions = questions.filter(q => q.trim() !== '');
 
     try {
-      const response = await fetch('/api/create-order-clean', {
+      const response = await fetch('/api/create-order-final', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +145,7 @@ export default function Hero() {
           try {
             console.log('Razorpay payment response:', response);
 
-            const verifyResponse = await fetch('/api/verify-payment-fixed', {
+            const verifyResponse = await fetch('/api/verify-payment-final', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
