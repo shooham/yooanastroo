@@ -16,7 +16,14 @@
       "Bash(git branch:*)",
       "Bash(gh auth:*)",
       "Bash(git config:*)",
-      "mcp__supabase__list_tables"
+      "mcp__supabase__list_tables",
+      "Bash(echo $env:USERPROFILE)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "Bash(node:*)",
+      "mcp__supabase__get_advisors",
+      "Bash(npm run dev:*)",
+      "mcp__supabase__get_project_url"
     ],
     "deny": [],
     "ask": []
