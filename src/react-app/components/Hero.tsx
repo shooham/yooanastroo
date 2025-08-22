@@ -76,7 +76,7 @@ export default function Hero() {
     const validQuestions = questions.filter(q => q.trim() !== '');
 
     try {
-      const response = await fetch('/api/create-order-fixed', {
+      const response = await fetch('/api/create-order-clean', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
