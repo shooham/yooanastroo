@@ -1,0 +1,107 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Customer data interface
+export interface CustomerData {
+  full_name: string
+  whatsapp_number: string
+  email_address?: string
+  place_of_birth: string
+  date_of_birth: string
+  birth_time?: string
+  birth_time_unknown: boolean
+  question_1?: string
+  question_2?: string
+  question_3?: string
+  question_4?: string
+  question_5?: string
+  question_6?: string
+  question_7?: string
+  question_8?: string
+  question_9?: string
+  question_10?: string
+}
+
+// Order data interface
+export interface OrderData {
+  customer_id: string
+  order_number: string
+  total_amount: number
+  status?: string
+  payment_status?: string
+  payment_method?: string
+  items?: any[]
+  service_type?: string
+  consultation_details?: any
+  notes?: string
+}
+
+// Generate unique order number
+export const generateOrderNumber = (): string => {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).substring(2, 7)
+  return `ORD-${timestamp}-${random}`.toUpperCase()
+}
+
+// Save customer data
+export const saveCustomer = async (customerData: CustomerData) => {
+  const { data, error } = await supabase
+    .from('customers')
+    .insert(customerData)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error saving customer:', error)
+    throw error
+  }
+
+  return data
+}
+
+// Save order data
+export const saveOrder = async (orderData: OrderData) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .insert(orderData)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error saving order:', error)
+    throw error
+  }
+
+  return data
+}
+
+// Save complete consultation data
+export const saveConsultation = async (
+  customerData: CustomerData,
+  orderData: Omit<OrderData, 'customer_id' | 'order_number'>
+) => {
+  try {
+    // First save customer
+    const customer = await saveCustomer(customerData)
+    
+    // Then save order
+    const order = await saveOrder({
+      ...orderData,
+      customer_id: customer.id,
+      order_number: generateOrderNumber()
+    })
+
+    return { customer, order }
+  } catch (error) {
+    console.error('Error saving consultation:', error)
+    throw error
+  }
+}
