@@ -68,22 +68,54 @@ export default async function handler(req, res) {
     console.log('Supabase URL:', process.env.SUPABASE_URL);
     console.log('Supabase Service Role Key (first 20 chars):', process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20));
     
-    // Initialize Supabase - Try service role first, fallback to anon key
+    // Initialize Supabase with multiple fallback strategies
     let supabase;
-    try {
-      supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-    } catch (serviceError) {
-      console.log('⚠️ Service role failed, trying anon key...');
-      supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
-      );
+    let supabaseKey = null;
+    
+    // Try different key combinations
+    const keyOptions = [
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      process.env.SUPABASE_ANON_KEY,
+      process.env.VITE_SUPABASE_ANON_KEY
+    ].filter(Boolean);
+    
+    console.log('🔄 Available key options count:', keyOptions.length);
+    
+    if (keyOptions.length === 0) {
+      console.error('❌ No Supabase keys found in environment');
+      return res.status(500).json({ 
+        error: 'Database error: Could not create order',
+        details: 'No Supabase authentication keys configured',
+        debug: 'Check SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY in Vercel environment variables'
+      });
     }
+    
+    // Try each key until one works
+    for (let i = 0; i < keyOptions.length; i++) {
+      try {
+        const testKey = keyOptions[i];
+        console.log(`🔄 Trying key option ${i + 1}: ${testKey.substring(0, 20)}...`);
+        
+        supabase = createClient(process.env.SUPABASE_URL, testKey);
+        supabaseKey = testKey;
+        break;
+      } catch (error) {
+        console.log(`⚠️ Key option ${i + 1} failed:`, error.message);
+        continue;
+      }
+    }
+    
+    if (!supabase || !supabaseKey) {
+      console.error('❌ All Supabase key options failed');
+      return res.status(500).json({ 
+        error: 'Database error: Could not create order',
+        details: 'Failed to initialize Supabase client with available keys'
+      });
+    }
+    
+    console.log('✅ Supabase client initialized with key:', supabaseKey.substring(0, 20) + '...');
 
-    // Test Supabase connection
+    // Test Supabase connection with simple query
     console.log('🔄 Testing Supabase connection...');
     try {
       const { data: testData, error: testError } = await supabase
@@ -93,18 +125,60 @@ export default async function handler(req, res) {
       
       if (testError) {
         console.error('❌ Supabase connection test failed:', testError);
-        return res.status(500).json({ 
-          error: 'Database error: Could not create order',
-          details: `Supabase connection failed: ${testError.message}`,
-          supabaseError: testError.code
+        console.error('❌ Test error details:', {
+          code: testError.code,
+          message: testError.message,
+          details: testError.details,
+          hint: testError.hint
         });
+        
+        // Try a simpler test with a basic select
+        console.log('🔄 Trying alternative connection test...');
+        try {
+          const { error: altTestError } = await supabase
+            .from('orders')
+            .select('id')
+            .limit(1);
+            
+          if (altTestError) {
+            console.error('❌ Alternative test also failed:', altTestError);
+            return res.status(500).json({ 
+              error: 'Database error: Could not create order',
+              details: `Supabase connection failed: Invalid API key`,
+              supabaseError: testError.code,
+              debug: {
+                keyUsed: supabaseKey.substring(0, 20) + '...',
+                url: process.env.SUPABASE_URL,
+                errorCode: testError.code,
+                errorMessage: testError.message
+              }
+            });
+          }
+          console.log('✅ Alternative test succeeded');
+        } catch (altError) {
+          console.error('❌ Alternative test exception:', altError);
+          return res.status(500).json({ 
+            error: 'Database error: Could not create order',
+            details: `Supabase authentication failed: ${altError.message}`,
+            debug: {
+              keyUsed: supabaseKey.substring(0, 20) + '...',
+              url: process.env.SUPABASE_URL
+            }
+          });
+        }
+      } else {
+        console.log('✅ Supabase connection successful');
       }
-      console.log('✅ Supabase connection successful');
     } catch (supabaseTestError) {
-      console.error('❌ Supabase connection test error:', supabaseTestError);
+      console.error('❌ Supabase connection test exception:', supabaseTestError);
       return res.status(500).json({ 
         error: 'Database error: Could not create order',
-        details: `Supabase authentication failed: ${supabaseTestError.message}`
+        details: `Supabase authentication failed: ${supabaseTestError.message}`,
+        debug: {
+          keyUsed: supabaseKey.substring(0, 20) + '...',
+          url: process.env.SUPABASE_URL,
+          exception: supabaseTestError.name
+        }
       });
     }
 
