@@ -18,13 +18,22 @@ export interface CustomerData {
   time_of_birth?: string
   place_of_birth: string
   unknown_birth_time: boolean
+  question_1?: string
+  question_2?: string
+  question_3?: string
+  question_4?: string
+  question_5?: string
+  question_6?: string
+  question_7?: string
+  question_8?: string
+  question_9?: string
+  question_10?: string
 }
 
 // Order data interface
 export interface OrderData {
   customer_id: string
   order_number: string
-  questions: string[]
   amount: number
   payment_status: string
   razorpay_order_id?: string

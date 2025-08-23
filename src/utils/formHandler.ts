@@ -24,11 +24,20 @@ export const handleAstrologyFormSubmit = async (formData: AstrologyFormData) => 
       time_of_birth: formData.birthTime || null,
       place_of_birth: formData.placeOfBirth,
       unknown_birth_time: formData.birthTimeUnknown || false,
+      question_1: formData.questions[0] || null,
+      question_2: formData.questions[1] || null,
+      question_3: formData.questions[2] || null,
+      question_4: formData.questions[3] || null,
+      question_5: formData.questions[4] || null,
+      question_6: formData.questions[5] || null,
+      question_7: formData.questions[6] || null,
+      question_8: formData.questions[7] || null,
+      question_9: formData.questions[8] || null,
+      question_10: formData.questions[9] || null,
     }
 
     // Prepare order data for astrology_orders table
     const orderData = {
-      questions: formData.questions.filter(q => q.trim() !== ''),
       amount: formData.amount * 100, // Convert to paise 
       payment_status: 'pending',
       report_delivered: false
