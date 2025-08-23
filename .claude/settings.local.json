@@ -24,7 +24,8 @@
       "mcp__supabase__get_advisors",
       "Bash(npm run dev:*)",
       "mcp__supabase__get_project_url",
-      "WebSearch"
+      "WebSearch",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
