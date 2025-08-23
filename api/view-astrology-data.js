@@ -49,8 +49,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // Process customer questions from individual columns to array
+    const processedCustomers = customers.map(customer => {
+      const questions = [];
+      for (let i = 1; i <= 10; i++) {
+        const question = customer[`question_${i}`];
+        if (question && question.trim()) {
+          questions.push(question.trim());
+        }
+      }
+      return { ...customer, questions };
+    });
+
     // Combine customer and order data
-    const consultations = customers.map(customer => {
+    const consultations = processedCustomers.map(customer => {
       const customerOrders = orders.filter(order => order.customer_id === customer.id);
       return {
         ...customer,
@@ -253,6 +265,37 @@ export default async function handler(req, res) {
         }
         .status-completed { background: #10B981; color: white; }
         .status-pending { background: #F59E0B; color: white; }
+        .report-status-dropdown {
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 2px solid #E5E7EB;
+            background: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .report-status-dropdown:hover {
+            border-color: #4F46E5;
+        }
+        .report-status-dropdown:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4F46E5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -338,7 +381,16 @@ export default async function handler(req, res) {
                             <div class="order-item ${order.payment_status}">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                     <strong>${order.order_number}</strong>
-                                    <span class="status-badge status-${order.payment_status}">${order.payment_status}</span>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <span class="status-badge status-${order.payment_status}">${order.payment_status}</span>
+                                        <div class="report-status-container">
+                                            <select class="report-status-dropdown" data-order-id="${order.id}" onchange="updateReportStatus('${order.id}', this.value)">
+                                                <option value="not_delivered" ${(order.report_status || 'not_delivered') === 'not_delivered' ? 'selected' : ''}>📝 Not Delivered</option>
+                                                <option value="in_progress" ${(order.report_status || 'not_delivered') === 'in_progress' ? 'selected' : ''}>⏳ In Progress</option>
+                                                <option value="delivered" ${(order.report_status || 'not_delivered') === 'delivered' ? 'selected' : ''}>✅ Delivered</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; font-size: 0.9rem; color: #6B7280;">
                                     <div><strong>Amount:</strong> ₹${Math.round(order.amount / 100)}</div>
@@ -346,18 +398,27 @@ export default async function handler(req, res) {
                                     ${order.razorpay_payment_id ? `<div><strong>Payment ID:</strong> ${order.razorpay_payment_id}</div>` : ''}
                                     ${order.payment_completed_at ? `<div><strong>Paid:</strong> ${new Date(order.payment_completed_at).toLocaleString('en-IN')}</div>` : ''}
                                 </div>
-                                ${order.questions && order.questions.length > 0 ? `
-                                <div style="margin-top: 15px;">
-                                    <strong style="color: #4F46E5;">Customer Questions (${order.questions.length}):</strong>
-                                    <div style="margin-top: 10px;">
-                                        ${order.questions.map((q, i) => `
-                                            <div style="background: white; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid #4F46E5;">
-                                                <strong>Q${i + 1}:</strong> ${q}
-                                            </div>
-                                        `).join('')}
-                                    </div>
+                                ${order.delivery_notes ? `
+                                <div style="margin-top: 10px; padding: 10px; background: #F0F9FF; border-radius: 5px; border-left: 3px solid #0EA5E9;">
+                                    <strong>📝 Delivery Notes:</strong> ${order.delivery_notes}
                                 </div>
-                                ` : '<div style="margin-top: 10px; color: #6B7280; font-style: italic;">No specific questions submitted</div>'}
+                                ` : ''}
+                                ${order.report_delivered_at ? `
+                                <div style="margin-top: 10px; color: #059669; font-size: 0.9rem;">
+                                    <strong>✅ Delivered on:</strong> ${new Date(order.report_delivered_at).toLocaleString('en-IN')}
+                                </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+
+                    ${customer.questions && customer.questions.length > 0 ? `
+                    <div class="questions" style="margin: 20px 30px 30px 30px; background: #F0F9FF; padding: 20px; border-radius: 10px; border: 1px solid #BAE6FD;">
+                        <h4 style="margin-bottom: 15px; color: #0369A1; font-size: 1.1rem;">❓ Customer Questions (${customer.questions.length})</h4>
+                        ${customer.questions.map((q, i) => `
+                            <div class="question" style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #0EA5E9; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <strong>Q${i + 1}:</strong> ${q}
                             </div>
                         `).join('')}
                     </div>
@@ -376,6 +437,92 @@ export default async function handler(req, res) {
             paid_orders: ${orders.filter(o => o.payment_status === 'completed').length},
             revenue: '₹${Math.round(orders.filter(o => o.payment_status === 'completed').reduce((sum, o) => sum + o.amount, 0) / 100)}'
         });
+
+        // Function to update report status
+        async function updateReportStatus(orderId, newStatus) {
+            const dropdown = document.querySelector(\`[data-order-id="\${orderId}"]\`);
+            const originalValue = dropdown.value;
+            
+            try {
+                // Show loading state
+                dropdown.disabled = true;
+                dropdown.style.opacity = '0.6';
+                
+                const response = await fetch('/api/update-report-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        reportStatus: newStatus
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show success message
+                    showNotification(\`✅ Report status updated to: \${newStatus.replace('_', ' ')}\`, 'success');
+                    
+                    // Update the dropdown color based on status
+                    dropdown.className = 'report-status-dropdown status-' + newStatus;
+                } else {
+                    throw new Error(result.error || 'Update failed');
+                }
+            } catch (error) {
+                console.error('Status update failed:', error);
+                showNotification('❌ Failed to update status: ' + error.message, 'error');
+                
+                // Revert dropdown to original value
+                dropdown.value = originalValue;
+            } finally {
+                // Remove loading state
+                dropdown.disabled = false;
+                dropdown.style.opacity = '1';
+            }
+        }
+
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = \`
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                background: \${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6'};
+                color: white;
+                border-radius: 8px;
+                font-weight: 500;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                animation: slideIn 0.3s ease;
+            \`;
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = \`
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        \`;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>`;
