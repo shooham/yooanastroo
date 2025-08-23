@@ -73,7 +73,17 @@ export default async function handler(req, res) {
         date_of_birth: dateOfBirth,
         time_of_birth: birthTime || null,
         place_of_birth: placeOfBirth,
-        unknown_birth_time: unknownBirthTime || false
+        unknown_birth_time: unknownBirthTime || false,
+        question_1: questions && questions[0] ? questions[0] : null,
+        question_2: questions && questions[1] ? questions[1] : null,
+        question_3: questions && questions[2] ? questions[2] : null,
+        question_4: questions && questions[3] ? questions[3] : null,
+        question_5: questions && questions[4] ? questions[4] : null,
+        question_6: questions && questions[5] ? questions[5] : null,
+        question_7: questions && questions[6] ? questions[6] : null,
+        question_8: questions && questions[7] ? questions[7] : null,
+        question_9: questions && questions[8] ? questions[8] : null,
+        question_10: questions && questions[9] ? questions[9] : null
       })
       .select('id')
       .single();
@@ -100,7 +110,6 @@ export default async function handler(req, res) {
       .insert({
         customer_id: customerId,
         order_number: orderNumber,
-        questions: questions || [],
         amount: amount,
         payment_status: 'pending',
         razorpay_order_id: razorpayOrder.id,
