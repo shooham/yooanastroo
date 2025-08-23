@@ -36,9 +36,9 @@ export const handleAstrologyFormSubmit = async (formData: AstrologyFormData) => 
       question_10: formData.questions[9] || null,
     }
 
-    // Prepare order data for astrology_orders table
+    // Prepare order data for astrology_orders table (no questions - they go in customer table)
     const orderData = {
-      amount: formData.amount * 100, // Convert to paise 
+      amount: 39900, // Fixed amount in paise (₹399)
       payment_status: 'pending',
       report_delivered: false
     }
