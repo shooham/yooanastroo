@@ -12,36 +12,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Customer data interface
 export interface CustomerData {
   full_name: string
+  email?: string
   whatsapp_number: string
-  email_address?: string
-  place_of_birth: string
   date_of_birth: string
-  birth_time?: string
-  birth_time_unknown: boolean
-  question_1?: string
-  question_2?: string
-  question_3?: string
-  question_4?: string
-  question_5?: string
-  question_6?: string
-  question_7?: string
-  question_8?: string
-  question_9?: string
-  question_10?: string
+  time_of_birth?: string
+  place_of_birth: string
+  unknown_birth_time: boolean
 }
 
 // Order data interface
 export interface OrderData {
   customer_id: string
   order_number: string
-  total_amount: number
-  status?: string
-  payment_status?: string
-  payment_method?: string
-  items?: any[]
-  service_type?: string
-  consultation_details?: any
-  notes?: string
+  questions: string[]
+  amount: number
+  payment_status: string
+  razorpay_order_id?: string
+  razorpay_payment_id?: string
+  payment_completed_at?: string
+  report_delivered: boolean
+  report_delivered_at?: string
+  admin_notes?: string
 }
 
 // Generate unique order number
@@ -54,7 +45,7 @@ export const generateOrderNumber = (): string => {
 // Save customer data
 export const saveCustomer = async (customerData: CustomerData) => {
   const { data, error } = await supabase
-    .from('customers')
+    .from('astrology_customers')
     .insert(customerData)
     .select()
     .single()
@@ -70,7 +61,7 @@ export const saveCustomer = async (customerData: CustomerData) => {
 // Save order data
 export const saveOrder = async (orderData: OrderData) => {
   const { data, error } = await supabase
-    .from('orders')
+    .from('astrology_orders')
     .insert(orderData)
     .select()
     .single()

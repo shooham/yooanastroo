@@ -15,50 +15,26 @@ export interface AstrologyFormData {
 
 export const handleAstrologyFormSubmit = async (formData: AstrologyFormData) => {
   try {
-    // Prepare customer data
+    // Prepare customer data for astrology_customers table
     const customerData = {
       full_name: formData.fullName,
+      email: formData.email || null,
       whatsapp_number: formData.whatsappNumber,
-      email_address: formData.email,
-      place_of_birth: formData.placeOfBirth,
       date_of_birth: formData.dateOfBirth,
-      birth_time: formData.birthTime,
-      birth_time_unknown: formData.birthTimeUnknown,
-      question_1: formData.questions[0] || '',
-      question_2: formData.questions[1] || '',
-      question_3: formData.questions[2] || '',
-      question_4: formData.questions[3] || '',
-      question_5: formData.questions[4] || '',
-      question_6: formData.questions[5] || '',
-      question_7: formData.questions[6] || '',
-      question_8: formData.questions[7] || '',
-      question_9: formData.questions[8] || '',
-      question_10: formData.questions[9] || '',
+      time_of_birth: formData.birthTime || null,
+      place_of_birth: formData.placeOfBirth,
+      unknown_birth_time: formData.birthTimeUnknown || false,
     }
 
-    // Prepare order data
+    // Prepare order data for astrology_orders table
     const orderData = {
-      total_amount: formData.amount,
-      payment_method: formData.paymentMethod || 'online',
-      service_type: 'astrology_consultation',
-      consultation_details: {
-        service_name: 'Astrology Consultation',
-        questions_count: formData.questions.filter(q => q.trim() !== '').length,
-        birth_details: {
-          date: formData.dateOfBirth,
-          time: formData.birthTime,
-          place: formData.placeOfBirth,
-          time_unknown: formData.birthTimeUnknown
-        }
-      },
-      items: [{
-        name: 'Astrology Consultation',
-        quantity: 1,
-        price: formData.amount
-      }]
+      questions: formData.questions.filter(q => q.trim() !== ''),
+      amount: formData.amount * 100, // Convert to paise 
+      payment_status: 'pending',
+      report_delivered: false
     }
 
-    // Save to Supabase
+    // Save to astrology tables
     const result = await saveConsultation(customerData, orderData)
     
     return {
